@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <stack>
 #include <omp.h>
 
 using namespace std;
@@ -20,7 +21,7 @@ public:
         adj[v].push_back(u); // undirected graph
     }
 
-    // 🔵 Parallel BFS
+    // 🔹 Parallel BFS
     void parallelBFS(int start) {
         vector<bool> visited(V, false);
         queue<int> q;
@@ -28,14 +29,14 @@ public:
         visited[start] = true;
         q.push(start);
 
-        cout << "\nParallel BFS Traversal: ";
+        cout << "Parallel BFS: ";
 
         while (!q.empty()) {
             int size = q.size();
 
             #pragma omp parallel for
             for (int i = 0; i < size; i++) {
-                int node = -1;
+                int node;
 
                 #pragma omp critical
                 {
@@ -46,15 +47,14 @@ public:
                     }
                 }
 
-                if (node != -1) {
-                    for (int neighbor : adj[node]) {
-                        if (!visited[neighbor]) {
-                            #pragma omp critical
-                            {
-                                if (!visited[neighbor]) {
-                                    visited[neighbor] = true;
-                                    q.push(neighbor);
-                                }
+                // Explore neighbors
+                for (int neighbor : adj[node]) {
+                    if (!visited[neighbor]) {
+                        #pragma omp critical
+                        {
+                            if (!visited[neighbor]) {
+                                visited[neighbor] = true;
+                                q.push(neighbor);
                             }
                         }
                     }
@@ -64,90 +64,44 @@ public:
         cout << endl;
     }
 
-    // 🔴 Parallel DFS Utility
+    // 🔹 Parallel DFS Utility
     void parallelDFSUtil(int node, vector<bool> &visited) {
-        bool alreadyVisited;
+        visited[node] = true;
 
         #pragma omp critical
-        {
-            alreadyVisited = visited[node];
-            if (!visited[node]) {
-                visited[node] = true;
-                cout << node << " ";
-            }
-        }
-
-        if (alreadyVisited) return;
+        cout << node << " ";
 
         #pragma omp parallel for
         for (int i = 0; i < adj[node].size(); i++) {
             int neighbor = adj[node][i];
-
             if (!visited[neighbor]) {
-                #pragma omp task
                 parallelDFSUtil(neighbor, visited);
             }
         }
     }
 
-    // 🔴 Parallel DFS
+    // 🔹 Parallel DFS
     void parallelDFS(int start) {
         vector<bool> visited(V, false);
-
-        cout << "\nParallel DFS Traversal: ";
-
-        #pragma omp parallel
-        {
-            #pragma omp single
-            {
-                parallelDFSUtil(start, visited);
-            }
-        }
-
+        cout << "Parallel DFS: ";
+        parallelDFSUtil(start, visited);
         cout << endl;
     }
 };
 
 int main() {
-    int V, E;
-
-    cout << "Enter number of vertices: ";
-    cin >> V;
-
+    int V = 6;
     Graph g(V);
 
-    cout << "Enter number of edges: ";
-    cin >> E;
+    // Example graph
+    g.addEdge(0, 1);
+    g.addEdge(0, 2);
+    g.addEdge(1, 3);
+    g.addEdge(1, 4);
+    g.addEdge(2, 5);
 
-    cout << "Enter edges (u v):\n";
-    for (int i = 0; i < E; i++) {
-        int u, v;
-        cin >> u >> v;
-        g.addEdge(u, v);
-    }
-
-    int start;
-    cout << "Enter starting vertex: ";
-    cin >> start;
-
-    g.parallelBFS(start);
-    g.parallelDFS(start);
+    g.parallelBFS(0);
+    g.parallelDFS(0);
 
     return 0;
 }
-
-    //    0
-    //    / \
-    //   1   2
-    //  / \   \
-    // 3   4   5
-
-// Enter number of vertices: 6
-// Enter number of edges: 5
-// Enter edges (u v):
-// 0 1
-// 0 2
-// 1 3
-// 1 4
-// 2 5
-// Enter starting vertex: 0 
