@@ -153,4 +153,25 @@ int main() {
     return 0;
 }
 
-// openmp command= -fopenmp
+
+
+//How to run in Vs Code -
+// g++ -fopenmp HPC2.cpp -o HPC2.exe                                                  
+//.\HPC2.exe               
+
+
+//In eclipse -
+// Build project 
+// Run 
+
+
+
+
+
+
+
+
+
+
+
+
