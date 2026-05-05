@@ -1,0 +1,157 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Input
+from tensorflow.keras.callbacks import EarlyStopping
+
+from tensorflow.keras.datasets import imdb
+
+
+
+
+
+
+
+
+
+
+
+num_words = 10000  # keep top 10k words
+
+(X_train_raw, y_train), (X_test_raw, y_test) = imdb.load_data(num_words=num_words)
+
+print("Dataset Loaded ✅")
+
+
+
+
+
+
+
+
+
+
+
+
+word_index = imdb.get_word_index()
+
+# reverse mapping
+reverse_word_index = {v: k for k, v in word_index.items()}
+
+def decode_review(encoded_review):
+    return " ".join([reverse_word_index.get(i - 3, "?") for i in encoded_review])
+
+# convert to text
+X_train_text = [decode_review(x) for x in X_train_raw]
+X_test_text = [decode_review(x) for x in X_test_raw]
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+vectorizer = TfidfVectorizer(max_features=5000)
+
+X_train = vectorizer.fit_transform(X_train_text)
+X_test = vectorizer.transform(X_test_text)
+
+y_train = np.array(y_train)
+y_test = np.array(y_test)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+model = Sequential([
+    Input(shape=(X_train.shape[1],)),
+    
+    Dense(128, activation='relu'),
+    Dropout(0.5),
+    
+    Dense(64, activation='relu'),
+    Dropout(0.5),
+    
+    Dense(1, activation='sigmoid')
+])
+
+model.compile(
+    optimizer='adam',
+    loss='binary_crossentropy',
+    metrics=['accuracy']
+)
+
+model.summary()
+
+
+
+
+
+
+
+
+
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=2,
+    restore_best_weights=True
+)
+
+
+
+
+
+
+
+
+
+history = model.fit(
+    X_train, y_train,
+    epochs=10,
+    batch_size=32,
+    validation_data=(X_test, y_test),
+    callbacks=[early_stop]
+)
+
+
+
+
+
+
+
+
+
+
+
+plt.figure()
+
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+
+plt.title("Accuracy Graph")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.legend()
+
+plt.show()
